@@ -35,6 +35,7 @@ pallet-vesting = { default-features = false, git = "https://github.com/paritytec
 pallet-multisig = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 pallet-utility = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 
+# NOTE: these two disabled features collide with std in wasm
 sp-io = { default-features = false, features = ["disable_oom", "disable_panic_handler"], git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 sp-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 sp-block-builder = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
