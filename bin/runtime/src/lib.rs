@@ -740,7 +740,7 @@ impl_runtime_apis! {
             gas_limit: u64,
             input_data: Vec<u8>,
         ) -> ContractExecResult {
-            Contracts::bare_call(origin, dest, value, gas_limit, input_data, true)
+            Contracts::bare_call(origin, dest, value, gas_limit, input_data, CONTRACTS_DEBUG_OUTPUT)
         }
 
         fn instantiate(
@@ -751,7 +751,7 @@ impl_runtime_apis! {
             data: Vec<u8>,
             salt: Vec<u8>,
         ) -> ContractInstantiateResult<AccountId> {
-            Contracts::bare_instantiate(origin, endowment, gas_limit, code, data, salt, true)
+            Contracts::bare_instantiate(origin, endowment, gas_limit, code, data, salt, CONTRACTS_DEBUG_OUTPUT)
         }
 
         fn get_storage(
