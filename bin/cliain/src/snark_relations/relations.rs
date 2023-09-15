@@ -5,14 +5,16 @@ use liminal_ark_relations::{
     preimage::{PreimageRelationWithFullInput, PreimageRelationWithPublicInput},
     shielder::{
         types::{
-            FrontendAccount, FrontendLeafIndex, FrontendMerklePath, FrontendMerkleRoot,
-            FrontendNote, FrontendNullifier, FrontendTokenAmount, FrontendTokenId,
-            FrontendTrapdoor,
+            FrontendAccount, FrontendEncryptedVote, FrontendLeafIndex, FrontendMerklePath,
+            FrontendMerkleRoot, FrontendNote, FrontendNullifier, FrontendTokenAmount,
+            FrontendTokenId, FrontendTrapdoor, FrontendVote, FrontendVoteBases,
+            FrontendVoteRandomness,
         },
         DepositAndMergeRelationWithFullInput, DepositAndMergeRelationWithPublicInput,
         DepositAndMergeRelationWithoutInput, DepositRelationWithFullInput,
         DepositRelationWithPublicInput, DepositRelationWithoutInput, MergeRelationWithFullInput,
-        MergeRelationWithPublicInput, MergeRelationWithoutInput, WithdrawRelationWithFullInput,
+        MergeRelationWithPublicInput, MergeRelationWithoutInput, VoteRelationWithFullInput,
+        VoteRelationWithPublicInput, VoteRelationWithoutInput, WithdrawRelationWithFullInput,
         WithdrawRelationWithPublicInput, WithdrawRelationWithoutInput,
     },
     xor::{XorRelationWithFullInput, XorRelationWithPublicInput},
@@ -20,9 +22,14 @@ use liminal_ark_relations::{
 };
 
 use crate::snark_relations::{
-    parsing::{parse_frontend_account, parse_frontend_merkle_path, parse_frontend_note},
+    parsing::{
+        parse_frontend_account, parse_frontend_merkle_path, parse_frontend_note,
+        parse_frontend_vote_bases,
+    },
     GetPublicInput,
 };
+
+const DEFAULT_VOTE_BASES: &str = "131, 243, 22, 251, 27, 15, 154, 154, 252, 137, 52, 42, 231, 183, 121, 207, 68, 95, 68, 69, 244, 238, 227, 27, 58, 108, 44, 150, 223, 140, 129, 232, 31, 152, 214, 153, 240, 95, 130, 13, 132, 10, 101, 131, 236, 124, 12, 44: 153, 79, 94, 143, 147, 208, 228, 13, 192, 64, 24, 57, 66, 193, 85, 11, 195, 75, 28, 217, 165, 46, 233, 4, 104, 89, 98, 228, 229, 161, 118, 59, 199, 47, 89, 93, 60, 84, 126, 107, 97, 183, 40, 255, 177, 20, 52, 140: 170, 102, 22, 74, 123, 164, 5, 124, 121, 139, 107, 175, 157, 91, 212, 41, 60, 183, 33, 138, 222, 56, 117, 34, 45, 87, 244, 111, 197, 10, 199, 246, 122, 78, 75, 81, 145, 211, 131, 106, 162, 251, 14, 168, 47, 119, 102, 169: 178, 43, 151, 216, 24, 165, 67, 133, 253, 118, 49, 69, 225, 146, 160, 252, 192, 121, 8, 170, 211, 191, 186, 248, 70, 255, 103, 115, 159, 176, 219, 76, 86, 143, 188, 54, 131, 49, 236, 214, 72, 12, 34, 69, 66, 151, 223, 11";
 
 /// All available relations from `relations` crate.
 #[allow(clippy::large_enum_variant)]
@@ -245,6 +252,56 @@ pub enum RelationArgs {
         #[clap(long)]
         new_token_amount: Option<FrontendTokenAmount>,
     },
+
+    Vote {
+        /// The upper bound for Merkle tree height (circuit constant).
+        #[clap(long, default_value = "16")]
+        max_path_len: u8,
+        /// The vote bases (circuit constants).
+        #[clap(long, value_parser = parse_frontend_vote_bases, default_value = DEFAULT_VOTE_BASES)]
+        vote_bases: FrontendVoteBases,
+
+        /// The identifier of the token being unshielded (public input).
+        #[clap(long)]
+        token_id: Option<FrontendTokenId>,
+        /// The nullifier that was used for the old note (public input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        nullifier: Option<FrontendNullifier>,
+        /// The new note (public input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        token_amount: Option<FrontendTokenAmount>,
+        /// The hash of first vote encryption (public input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        first_vote_hash: Option<FrontendEncryptedVote>,
+        /// The hash of second vote encryption (public input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        second_vote_hash: Option<FrontendEncryptedVote>,
+        /// The Merkle root of the tree containing the old note (public input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        merkle_root: Option<FrontendMerkleRoot>,
+
+        /// The trapdoor that was used for the old note (private input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        trapdoor: Option<FrontendTrapdoor>,
+        /// The first vote (private input).
+        #[clap(long)]
+        first_vote: Option<FrontendVote>,
+        /// The second vote (private input).
+        #[clap(long)]
+        second_vote: Option<FrontendVote>,
+        /// The randomness used for vote encryption (private input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        vote_randomness: Option<FrontendVoteRandomness>,
+        /// The Merkle path proving that the old note is under `merkle_root` (private input).
+        #[clap(long, value_parser = parse_frontend_merkle_path)]
+        merkle_path: Option<FrontendMerklePath>,
+        /// The index of the old note in the Merkle tree (private input).
+        #[clap(long)]
+        leaf_index: Option<FrontendLeafIndex>,
+        /// The old note (private input).
+        #[clap(long, value_parser = parse_frontend_note)]
+        note: Option<FrontendNote>,
+    },
 }
 
 impl RelationArgs {
@@ -256,6 +313,7 @@ impl RelationArgs {
             RelationArgs::Deposit { .. } => String::from("deposit"),
             RelationArgs::DepositAndMerge { .. } => String::from("deposit_and_merge"),
             RelationArgs::Merge { .. } => String::from("merge"),
+            RelationArgs::Vote { .. } => String::from("vote"),
             RelationArgs::Withdraw { .. } => String::from("withdraw"),
             RelationArgs::Preimage { .. } => String::from("preimage"),
         }
@@ -443,6 +501,50 @@ impl ConstraintSynthesizer<CircuitField> for RelationArgs {
                 .generate_constraints(cs)
             }
 
+            RelationArgs::Vote {
+                max_path_len,
+                vote_bases,
+
+                token_id,
+                nullifier,
+                token_amount,
+                first_vote_hash,
+                second_vote_hash,
+                merkle_root,
+
+                trapdoor,
+                first_vote,
+                second_vote,
+                vote_randomness,
+                merkle_path,
+                leaf_index,
+                note,
+            } => {
+                if cs.is_in_setup_mode() {
+                    return VoteRelationWithoutInput::new(max_path_len, vote_bases)
+                        .generate_constraints(cs);
+                }
+
+                VoteRelationWithFullInput::new(
+                    max_path_len,
+                    vote_bases,
+                    token_id.unwrap_or_else(|| panic!("You must provide token id")),
+                    nullifier.unwrap_or_else(|| panic!("You must provide nullifier")),
+                    token_amount.unwrap_or_else(|| panic!("You must provide token amount")),
+                    first_vote_hash.unwrap_or_else(|| panic!("You must provide first vote hash")),
+                    second_vote_hash.unwrap_or_else(|| panic!("You must provide second vote hash")),
+                    merkle_root.unwrap_or_else(|| panic!("You must provide merkle root")),
+                    trapdoor.unwrap_or_else(|| panic!("You must provide trapdoor")),
+                    first_vote.unwrap_or_else(|| panic!("You must provide first vote")),
+                    second_vote.unwrap_or_else(|| panic!("You must provide second vote")),
+                    vote_randomness.unwrap_or_else(|| panic!("You must provide vote randomness")),
+                    merkle_path.unwrap_or_else(|| panic!("You must provide merkle path")),
+                    leaf_index.unwrap_or_else(|| panic!("You must provide leaf index")),
+                    note.unwrap_or_else(|| panic!("You must provide note")),
+                )
+                .generate_constraints(cs)
+            }
+
             RelationArgs::Preimage { hash, preimage } => PreimageRelationWithFullInput::new(
                 preimage.unwrap_or_else(|| panic!("You must provide preimage")),
                 hash.unwrap_or_else(|| panic!("You must provide hash")),
@@ -588,6 +690,48 @@ impl GetPublicInput for RelationArgs {
                     _ => panic!("Provide at least public (fee, recipient, token id, old nullifier, new note, token amount out and merkle root)"),
                 }
             }
+
+            RelationArgs::Vote {
+                max_path_len,
+                vote_bases,
+                token_id,
+                nullifier,
+                token_amount,
+                first_vote_hash,
+                second_vote_hash,
+                merkle_root,
+                ..
+            } => {
+                match (
+                    token_id,
+                    nullifier,
+                    token_amount,
+                    first_vote_hash,
+                    second_vote_hash,
+                    merkle_root,
+                ) {
+                    (
+                        Some(token_id),
+                        Some(nullifier),
+                        Some(token_amount),
+                        Some(first_vote_hash),
+                        Some(second_vote_hash),
+                        Some(merkle_root),
+                    ) => VoteRelationWithPublicInput::new(
+                        *max_path_len,
+                        (*vote_bases.clone()).to_vec(),
+                        *token_id,
+                        *nullifier,
+                        *token_amount,
+                        *first_vote_hash,
+                        *second_vote_hash,
+                        *merkle_root,
+                    )
+                    .serialize_public_input(),
+                    _ => panic!("Provide at least public (token id, nullifier, token amount, first and second vote hash and merkle root)"),
+                }
+            }
+
             RelationArgs::Preimage { hash, .. } => PreimageRelationWithPublicInput::new(hash.unwrap_or_else(|| panic!("You must provide hash"))).serialize_public_input(),
         }
     }

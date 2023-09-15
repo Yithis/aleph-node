@@ -36,9 +36,7 @@ pub use vesting::{vest, vest_other, vested_transfer};
 pub use {
     baby_liminal::{delete_key, overwrite_key, store_key, verify},
     commands::{BabyLiminal, SnarkRelation},
-    snark_relations::{
-        generate_keys, generate_keys_from_srs, generate_proof, generate_srs, verify as verify_proof,
-    },
+    snark_relations::{generate_keys, generate_proof, verify as verify_proof},
 };
 
 pub struct ConnectionConfig {

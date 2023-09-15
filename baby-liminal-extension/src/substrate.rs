@@ -32,15 +32,7 @@ pub fn weight_of_verify<T: BabyLiminalConfig>(system: Option<ProvingSystem>) -> 
         Some(ProvingSystem::Groth16) => {
             <<T as BabyLiminalConfig>::WeightInfo as WeightInfo>::verify_groth16()
         }
-        Some(ProvingSystem::Gm17) => {
-            <<T as BabyLiminalConfig>::WeightInfo as WeightInfo>::verify_gm17()
-        }
-        Some(ProvingSystem::Marlin) => {
-            <<T as BabyLiminalConfig>::WeightInfo as WeightInfo>::verify_marlin()
-        }
-        None => weight_of_verify::<T>(Some(ProvingSystem::Groth16))
-            .max(weight_of_verify::<T>(Some(ProvingSystem::Gm17)))
-            .max(weight_of_verify::<T>(Some(ProvingSystem::Marlin))),
+        None => weight_of_verify::<T>(Some(ProvingSystem::Groth16)),
     }
 }
 

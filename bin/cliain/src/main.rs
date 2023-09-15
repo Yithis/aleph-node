@@ -11,8 +11,8 @@ use cliain::{
 };
 #[cfg(feature = "liminal")]
 use cliain::{
-    delete_key, generate_keys, generate_keys_from_srs, generate_proof, generate_srs, overwrite_key,
-    store_key, verify, verify_proof, BabyLiminal, SnarkRelation,
+    delete_key, generate_keys, generate_proof, overwrite_key, store_key, verify, verify_proof,
+    BabyLiminal, SnarkRelation,
 };
 use log::{error, info};
 
@@ -301,17 +301,6 @@ async fn main() -> anyhow::Result<()> {
 
         #[cfg(feature = "liminal")]
         Command::SnarkRelation(cmd) => match *cmd {
-            SnarkRelation::GenerateSrs {
-                system,
-                num_constraints,
-                num_variables,
-                degree,
-            } => generate_srs(system, num_constraints, num_variables, degree),
-            SnarkRelation::GenerateKeysFromSrs {
-                relation,
-                system,
-                srs_file,
-            } => generate_keys_from_srs(relation, system, srs_file),
             SnarkRelation::GenerateKeys { relation, system } => generate_keys(relation, system),
             SnarkRelation::GenerateProof {
                 relation,

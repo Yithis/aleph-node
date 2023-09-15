@@ -12,7 +12,6 @@ use sp_core::H256;
 use {
     crate::snark_relations::{
         parsing::parse_some_system, NonUniversalProvingSystem, RelationArgs, SomeProvingSystem,
-        UniversalProvingSystem,
     },
     aleph_client::{
         pallet_baby_liminal::systems::ProvingSystem,
@@ -206,39 +205,6 @@ pub enum BabyLiminal {
 #[cfg(feature = "liminal")]
 #[derive(Debug, Clone, Subcommand)]
 pub enum SnarkRelation {
-    GenerateSrs {
-        /// Proving system to use.
-        #[clap(long, short, value_enum, default_value = "marlin")]
-        system: UniversalProvingSystem,
-
-        /// Maximum supported number of constraints.
-        #[clap(long, default_value = "10000")]
-        num_constraints: usize,
-
-        /// Maximum supported number of variables.
-        #[clap(long, default_value = "10000")]
-        num_variables: usize,
-
-        /// Maximum supported polynomial degree.
-        #[clap(long, default_value = "10000")]
-        degree: usize,
-    },
-
-    /// Generate verifying and proving key from SRS and save them to separate binary files.
-    GenerateKeysFromSrs {
-        ///Relation to work with.
-        #[clap(subcommand)]
-        relation: RelationArgs,
-
-        /// Proving system to use.
-        #[clap(long, short, value_enum, default_value = "marlin")]
-        system: UniversalProvingSystem,
-
-        /// Path to a file containing SRS.
-        #[clap(long)]
-        srs_file: PathBuf,
-    },
-
     /// Generate verifying and proving key and save them to separate binary files.
     GenerateKeys {
         /// Relation to work with.

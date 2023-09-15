@@ -2,11 +2,29 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Error, Result};
 use clap::ValueEnum;
-use liminal_ark_relations::shielder::types::{FrontendAccount, FrontendMerklePath, FrontendNote};
-
-use crate::snark_relations::{
-    systems::SomeProvingSystem, NonUniversalProvingSystem, UniversalProvingSystem,
+use liminal_ark_relations::shielder::types::{
+    FrontendAccount, FrontendMerklePath, FrontendNote, FrontendVoteBases,
 };
+
+use crate::snark_relations::{systems::SomeProvingSystem, NonUniversalProvingSystem};
+
+type FrontendVoteBase = [u8; 48];
+
+pub fn parse_frontend_vote_hash(frontend_vote_hash: &str) -> Result<FrontendVoteBase> {
+    frontend_vote_hash
+        .split(',')
+        .map(|l| u8::from_str(l).expect("Each element should be a valid `u8`"))
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|e| anyhow!("Vote base consists of 48 `u8` elements: {e:?}"))
+}
+
+pub fn parse_frontend_vote_bases(frontend_vote_bases: &str) -> Result<FrontendVoteBases> {
+    Ok(frontend_vote_bases
+        .split(':')
+        .map(|n| parse_frontend_vote_hash(n).expect("Each element should be valid vote base"))
+        .collect::<Vec<_>>())
+}
 
 pub fn parse_frontend_note(frontend_note: &str) -> Result<FrontendNote> {
     frontend_note
@@ -34,9 +52,7 @@ pub fn parse_frontend_account(frontend_account: &str) -> Result<FrontendAccount>
 }
 
 pub fn parse_some_system(system: &str) -> Result<SomeProvingSystem> {
-    let maybe_universal =
-        UniversalProvingSystem::from_str(system, true).map(SomeProvingSystem::Universal);
     let maybe_non_universal =
         NonUniversalProvingSystem::from_str(system, true).map(SomeProvingSystem::NonUniversal);
-    maybe_universal.or(maybe_non_universal).map_err(Error::msg)
+    maybe_non_universal.map_err(Error::msg)
 }

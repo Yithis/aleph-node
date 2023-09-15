@@ -5,10 +5,6 @@ fn save_bytes(bytes: &[u8], prefix: &str, identifier: &str) {
     fs::write(path, bytes).unwrap_or_else(|_| panic!("Failed to save {}", identifier));
 }
 
-pub fn save_srs(srs: &[u8], env_id: &str) {
-    save_bytes(srs, env_id, "srs");
-}
-
 pub fn save_keys(rel_name: &str, env_id: &str, pk: &[u8], vk: &[u8]) {
     let prefix = format!("{}.{}", rel_name, env_id);
     save_bytes(pk, &prefix, "pk");
@@ -19,10 +15,6 @@ pub fn save_proving_artifacts(rel_name: &str, env_id: &str, proof: &[u8], input:
     let prefix = format!("{}.{}", rel_name, env_id);
     save_bytes(proof, &prefix, "proof");
     save_bytes(input, &prefix, "public_input");
-}
-
-pub fn read_srs(srs_file: PathBuf) -> Vec<u8> {
-    fs::read(srs_file).expect("Failed to read SRS from the provided path")
 }
 
 pub fn read_key(key_file: PathBuf) -> Vec<u8> {
