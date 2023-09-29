@@ -22,11 +22,11 @@ ark-crypto-primitives = { version = "0.4.0", default-features = false, features 
     "r1cs",
     "sponge",
 ] }
-liminal-ark-pnbr-poseidon-parameters = { version = "0.1.0", default-features = false, path = "../../poseidon377/poseidon-parameters" }
-liminal-ark-pnbr-poseidon-permutation = { version = "0.1.0", default-features = false, path = "../../poseidon377/poseidon-permutation" }
+liminal-ark-pnbr-poseidon-parameters = { git = "https://github.com/Yithis/poseidon377.git", package = "liminal-ark-pnbr-poseidon-parameters", default-features = false }
+liminal-ark-pnbr-poseidon-permutation = { git = "https://github.com/Yithis/poseidon377.git", package = "liminal-ark-pnbr-poseidon-permutation", default-features = false }
 
 # For generation only
-liminal-ark-pnbr-poseidon-paramgen = { version = "0.1.0", optional = true, path = "../../poseidon377/poseidon-paramgen" }
+liminal-ark-pnbr-poseidon-paramgen = { git = "https://github.com/Yithis/poseidon377.git", package = "liminal-ark-pnbr-poseidon-paramgen", optional = true }
 
 [lib]
 name = "liminal_ark_poseidon"
