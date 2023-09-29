@@ -1,13 +1,10 @@
 use ark_std::vec::Vec;
 #[cfg(feature = "circuit")]
 use {
-    ark_poly::univariate::DensePolynomial,
-    ark_poly_commit::marlin_pc::MarlinKZG10,
     ark_relations::r1cs::ConstraintSynthesizer,
     ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
     ark_snark::SNARK,
     ark_std::rand::{rngs::StdRng, SeedableRng},
-    blake2::Blake2s,
 };
 
 // For now, we can settle with these types.
@@ -22,12 +19,6 @@ pub type FpVar = ark_r1cs_std::fields::fp::FpVar<CircuitField>;
 // Systems with hardcoded parameters.
 #[cfg(feature = "circuit")]
 pub type Groth16 = ark_groth16::Groth16<PairingEngine>;
-#[cfg(feature = "circuit")]
-pub type GM17 = ark_gm17::GM17<PairingEngine>;
-#[cfg(feature = "circuit")]
-pub type MarlinPolynomialCommitment = MarlinKZG10<PairingEngine, DensePolynomial<CircuitField>>;
-#[cfg(feature = "circuit")]
-pub type Marlin = ark_marlin::Marlin<CircuitField, MarlinPolynomialCommitment, Blake2s>;
 
 /// Serialized keys.
 pub struct RawKeys {
@@ -141,51 +132,3 @@ macro_rules! impl_non_universal_system_for_snark {
 
 #[cfg(feature = "circuit")]
 impl_non_universal_system_for_snark!(Groth16);
-#[cfg(feature = "circuit")]
-impl_non_universal_system_for_snark!(GM17);
-
-#[cfg(feature = "circuit")]
-impl ProvingSystem for Marlin {
-    type Proof = ark_marlin::Proof<CircuitField, MarlinPolynomialCommitment>;
-    type ProvingKey = ark_marlin::IndexProverKey<CircuitField, MarlinPolynomialCommitment>;
-    type VerifyingKey = ark_marlin::IndexVerifierKey<CircuitField, MarlinPolynomialCommitment>;
-
-    fn prove<C: ConstraintSynthesizer<CircuitField>>(
-        pk: &Self::ProvingKey,
-        circuit: C,
-    ) -> Self::Proof {
-        let mut rng = dummy_rng();
-        Marlin::prove(pk, circuit, &mut rng).expect("Failed to generate proof")
-    }
-
-    fn verify(
-        vk: &Self::VerifyingKey,
-        proof: &Self::Proof,
-        public_input: Vec<CircuitField>,
-    ) -> Result<bool, Error> {
-        let mut rng = dummy_rng();
-        Marlin::verify(vk, public_input.as_slice(), proof, &mut rng)
-            .map_err(|_why| Error::UniversalSystemVerificationError)
-    }
-}
-
-#[cfg(feature = "circuit")]
-impl UniversalSystem for Marlin {
-    type Srs = ark_marlin::UniversalSRS<CircuitField, MarlinPolynomialCommitment>;
-
-    fn generate_srs(num_constraints: usize, num_variables: usize, degree: usize) -> Self::Srs {
-        let mut rng = dummy_rng();
-        Marlin::universal_setup(num_constraints, num_variables, degree, &mut rng)
-            .expect("Failed to generate SRS")
-    }
-
-    fn generate_keys<C: ConstraintSynthesizer<CircuitField>>(
-        circuit: C,
-        srs: &Self::Srs,
-    ) -> (Self::ProvingKey, Self::VerifyingKey) {
-        Marlin::index(srs, circuit).expect(
-            "Failed to generate keys from SRS (it might be the case, that the circuit is \
-                larger than the SRS allows).",
-        )
-    }
-}

@@ -149,9 +149,10 @@ mod tests {
 
     use ark_bls12_381::Bls12_381;
     use ark_ff::One;
-    use ark_groth16::Groth16;
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16};
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem};
     use ark_snark::SNARK;
+    use ark_std::rand::SeedableRng;
 
     use super::*;
     use crate::shielder::{
@@ -241,16 +242,16 @@ mod tests {
     fn withdraw_proving_procedure() {
         let circuit_without_input = WithdrawRelationWithoutInput::new(MAX_PATH_LEN);
 
-        let mut rng = ark_std::test_rng();
+        let mut rng = ark_std::rand::rngs::StdRng::from_rng(ark_std::test_rng()).unwrap();
         let (pk, vk) =
             Groth16::<Bls12_381>::circuit_specific_setup(circuit_without_input, &mut rng).unwrap();
 
         let circuit = get_circuit_with_full_input();
-        let proof = Groth16::prove(&pk, circuit, &mut rng).unwrap();
+        let proof = Groth16::<_, LibsnarkReduction>::prove(&pk, circuit, &mut rng).unwrap();
 
         let circuit = WithdrawRelationWithPublicInput::from(get_circuit_with_full_input());
         let input = circuit.serialize_public_input();
-        let valid_proof = Groth16::verify(&vk, &input, &proof).unwrap();
+        let valid_proof = Groth16::<_, LibsnarkReduction>::verify(&vk, &input, &proof).unwrap();
         assert!(valid_proof);
     }
 
@@ -258,12 +259,12 @@ mod tests {
     fn neither_fee_nor_recipient_are_simplified_out() {
         let circuit_without_input = WithdrawRelationWithoutInput::new(MAX_PATH_LEN);
 
-        let mut rng = ark_std::test_rng();
+        let mut rng = ark_std::rand::rngs::StdRng::from_rng(ark_std::test_rng()).unwrap();
         let (pk, vk) =
             Groth16::<Bls12_381>::circuit_specific_setup(circuit_without_input, &mut rng).unwrap();
 
         let circuit = get_circuit_with_full_input();
-        let proof = Groth16::prove(&pk, circuit, &mut rng).unwrap();
+        let proof = Groth16::<_, LibsnarkReduction>::prove(&pk, circuit, &mut rng).unwrap();
 
         let circuit: WithdrawRelationWithPublicInput = get_circuit_with_full_input().into();
         let true_input = circuit.serialize_public_input();
@@ -271,7 +272,9 @@ mod tests {
         input_with_corrupted_fee[0] = BackendTokenAmount::from(2);
         assert_ne!(true_input[0], input_with_corrupted_fee[0]);
 
-        let valid_proof = Groth16::verify(&vk, &input_with_corrupted_fee, &proof).unwrap();
+        let valid_proof =
+            Groth16::<_, LibsnarkReduction>::verify(&vk, &input_with_corrupted_fee, &proof)
+                .unwrap();
         assert!(!valid_proof);
 
         let mut input_with_corrupted_recipient = true_input.clone();
@@ -279,7 +282,9 @@ mod tests {
         input_with_corrupted_recipient[1] = convert_account(fake_recipient);
         assert_ne!(true_input[1], input_with_corrupted_recipient[1]);
 
-        let valid_proof = Groth16::verify(&vk, &input_with_corrupted_recipient, &proof).unwrap();
+        let valid_proof =
+            Groth16::<_, LibsnarkReduction>::verify(&vk, &input_with_corrupted_recipient, &proof)
+                .unwrap();
         assert!(!valid_proof);
     }
 
@@ -287,7 +292,7 @@ mod tests {
     fn cannot_create_sneaky_note() {
         let circuit_without_input = WithdrawRelationWithoutInput::new(MAX_PATH_LEN);
 
-        let mut rng = ark_std::test_rng();
+        let mut rng = ark_std::rand::rngs::StdRng::from_rng(ark_std::test_rng()).unwrap();
         let (pk, vk) =
             Groth16::<Bls12_381>::circuit_specific_setup(circuit_without_input, &mut rng).unwrap();
 
@@ -297,18 +302,18 @@ mod tests {
         // ... hence we need to leave in Shielder -1 token ...
         circuit.new_token_amount = BackendTokenAmount::one().neg();
         // ... and compute new sneaky note.
-        circuit.new_note = BackendNote::new(ark_ff::BigInteger256([
+        circuit.new_note = BackendNote::new(ark_ff::biginteger::BigInteger256::new([
             875544533870975309,
             17340113879898921273,
             17290319916917063854,
             4489249721891001805,
         ]));
 
-        let proof = Groth16::prove(&pk, circuit.clone(), &mut rng).unwrap();
+        let proof = Groth16::<_, LibsnarkReduction>::prove(&pk, circuit.clone(), &mut rng).unwrap();
 
         let circuit = WithdrawRelationWithPublicInput::from(circuit);
         let input = circuit.serialize_public_input();
-        let valid_proof = Groth16::verify(&vk, &input, &proof).unwrap();
+        let valid_proof = Groth16::<_, LibsnarkReduction>::verify(&vk, &input, &proof).unwrap();
         // Without `enforce_cmp` in `TokenAmountVar` this proof is valid!
         assert!(!valid_proof);
     }

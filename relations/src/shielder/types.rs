@@ -18,6 +18,11 @@ pub type FrontendLeafIndex = u64;
 pub type FrontendAccount = [u8; 32];
 pub type FrontendMerklePathNode = [u64; 4];
 
+pub type FrontendEncryptedVote = [u64; 4];
+pub type FrontendVote = u16;
+pub type FrontendVoteRandomness = [u64; 4];
+pub type FrontendVoteBases = Vec<[u8; 48]>;
+
 // Types used internally by the relations (but still outside circuit environment).
 pub type BackendNullifier = CircuitField;
 pub type BackendTrapdoor = CircuitField;
@@ -28,3 +33,8 @@ pub type BackendMerkleRoot = CircuitField;
 pub type BackendMerklePath = Vec<CircuitField>;
 pub type BackendLeafIndex = u64;
 pub type BackendAccount = CircuitField;
+
+pub type BackendEncryptedVote = CircuitField;
+pub type BackendVote = u16;
+pub type BackendVoteRandomness = CircuitField;
+pub type BackendVoteBases = Vec<ark_bls12_381::G1Affine>;

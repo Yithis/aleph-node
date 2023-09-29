@@ -40,7 +40,7 @@ clear
 
 
 if $BUILD_ALEPH_NODE ; then
-  cargo build --release -p aleph-node --features "short_session enable_treasury_proposals"
+  cargo build --release -p aleph-node --features "short_session enable_treasury_proposals liminal"
 fi
 
 declare -a account_ids
@@ -87,7 +87,8 @@ run_node() {
   if $BOOTSTRAP ; then
     ./target/release/aleph-node purge-chain --base-path $BASE_PATH/$account_id --chain $BASE_PATH/chainspec.json -y
   fi
-  ./target/release/aleph-node \
+
+  NODE_PUBKEY=5D34dL5prEUaGNQtPPZ3yN5Y6BnkfXunKXXz6fo7ZJbLwRRH ./target/release/aleph-node \
     $validator \
     --chain $BASE_PATH/chainspec.json \
     --base-path $BASE_PATH/$account_id \

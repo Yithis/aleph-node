@@ -40,7 +40,7 @@ pub mod pallet {
     };
 
     use super::*;
-    use crate::systems::{Gm17, Groth16, Marlin, VerificationError, VerifyingSystem};
+    use crate::systems::{Groth16, VerificationError, VerifyingSystem};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -270,8 +270,6 @@ pub mod pallet {
         #[pallet::weight(
             match system {
                 ProvingSystem::Groth16 => T::WeightInfo::verify_groth16(),
-                ProvingSystem::Gm17 => T::WeightInfo::verify_gm17(),
-                ProvingSystem::Marlin => T::WeightInfo::verify_marlin(),
             }
         )]
         #[pallet::call_index(3)]
@@ -347,12 +345,6 @@ pub mod pallet {
                 ProvingSystem::Groth16 => {
                     Self::_bare_verify::<Groth16>(verification_key_identifier, proof, public_input)
                 }
-                ProvingSystem::Gm17 => {
-                    Self::_bare_verify::<Gm17>(verification_key_identifier, proof, public_input)
-                }
-                ProvingSystem::Marlin => {
-                    Self::_bare_verify::<Marlin>(verification_key_identifier, proof, public_input)
-                }
             }
         }
 
@@ -375,7 +367,7 @@ pub mod pallet {
             );
 
             let proof_len = proof.len() as u32;
-            let proof: S::Proof = CanonicalDeserialize::deserialize(&*proof).map_err(|e| {
+            let proof: S::Proof = S::Proof::deserialize_compressed(&*proof).map_err(|e| {
                 log::error!("Deserializing proof failed: {:?}", e);
                 (
                     Error::<T>::DeserializingProofFailed,
@@ -384,7 +376,7 @@ pub mod pallet {
             })?;
 
             let public_input: Vec<S::CircuitField> =
-                CanonicalDeserialize::deserialize(&*public_input).map_err(|e| {
+                <Vec<S::CircuitField>>::deserialize_compressed(&*public_input).map_err(|e| {
                     log::error!("Deserializing public input failed: {:?}", e);
                     (
                         Error::<T>::DeserializingPublicInputFailed,
@@ -400,7 +392,7 @@ pub mod pallet {
                     Some(T::WeightInfo::verify_key_deserializing_fails(0)),
                 ))?;
             let verification_key: S::VerifyingKey =
-                CanonicalDeserialize::deserialize(&**verification_key).map_err(|e| {
+                S::VerifyingKey::deserialize_compressed(&**verification_key).map_err(|e| {
                     log::error!("Deserializing verification key failed: {:?}", e);
                     (
                         Error::<T>::DeserializingVerificationKeyFailed,

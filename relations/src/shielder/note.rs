@@ -6,7 +6,10 @@ use liminal_ark_poseidon::hash;
 use super::types::{
     FrontendNote, FrontendNullifier, FrontendTokenAmount, FrontendTokenId, FrontendTrapdoor,
 };
-use crate::{environment::CircuitField, shielder::convert_hash};
+use crate::{
+    environment::CircuitField,
+    shielder::{convert_hash, BigInteger256},
+};
 
 /// Compute note as the result of hashing `(token_id, token_amount, trapdoor, nullifier)`.
 ///
@@ -17,20 +20,21 @@ pub fn compute_note(
     trapdoor: FrontendTrapdoor,
     nullifier: FrontendNullifier,
 ) -> FrontendNote {
-    hash::four_to_one_hash([
+    BigInteger256::from(hash::four_to_one_hash([
         CircuitField::from(token_id as u64),
         CircuitField::from(token_amount),
         convert_hash(trapdoor),
         convert_hash(nullifier),
-    ])
+    ]))
     .0
-     .0
 }
 
 pub fn compute_parent_hash(left: FrontendNote, right: FrontendNote) -> FrontendNote {
-    hash::two_to_one_hash([convert_hash(left), convert_hash(right)])
-        .0
-         .0
+    BigInteger256::from(hash::two_to_one_hash([
+        convert_hash(left),
+        convert_hash(right),
+    ]))
+    .0
 }
 
 /// Create a note from the first 32 bytes of `bytes`.

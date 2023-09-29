@@ -1,7 +1,7 @@
-use ark_crypto_primitives::SNARK;
 use ark_ff::BigInteger256;
-use ark_groth16::Groth16;
+use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16};
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem};
+use ark_snark::SNARK;
 use liminal_ark_poseidon::hash;
 
 use crate::{
@@ -13,9 +13,10 @@ use crate::{
 fn preimage_constraints_correctness() {
     let preimage = CircuitField::from(17u64);
     let image = hash::one_to_one_hash([preimage]);
-    let frontend_image: [u64; 4] = image.0 .0;
+    let frontend_image: [u64; 4] = BigInteger256::from(image).0;
 
-    let circuit = PreimageRelationWithFullInput::new(frontend_image, preimage.0 .0);
+    let circuit =
+        PreimageRelationWithFullInput::new(frontend_image, BigInteger256::from(preimage).0);
 
     let cs = ConstraintSystem::new_ref();
     circuit.generate_constraints(cs.clone()).unwrap();
@@ -28,7 +29,10 @@ fn preimage_constraints_correctness() {
 fn unsatisfied_preimage_constraints() {
     let true_preimage = CircuitField::from(17u64);
     let fake_image = hash::one_to_one_hash([CircuitField::from(19u64)]);
-    let circuit = PreimageRelationWithFullInput::new(fake_image.0 .0, true_preimage.0 .0);
+    let circuit = PreimageRelationWithFullInput::new(
+        BigInteger256::from(fake_image).0,
+        BigInteger256::from(true_preimage).0,
+    );
 
     let cs = ConstraintSystem::new_ref();
     circuit.generate_constraints(cs.clone()).unwrap();
@@ -42,7 +46,7 @@ fn unsatisfied_preimage_constraints() {
 fn preimage_proving_and_verifying() {
     let (vk, input, proof) = preimage_proving();
 
-    let is_valid = Groth16::verify(&vk, &input, &proof).unwrap();
+    let is_valid = Groth16::<_, LibsnarkReduction>::verify(&vk, &input, &proof).unwrap();
     assert!(is_valid);
 }
 

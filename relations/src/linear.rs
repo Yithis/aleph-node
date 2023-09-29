@@ -52,9 +52,10 @@ mod relation {
 #[cfg(all(test, feature = "circuit"))]
 mod tests {
     use ark_bls12_381::Bls12_381;
-    use ark_groth16::Groth16;
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16};
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef};
     use ark_snark::SNARK;
+    use ark_std::rand::SeedableRng;
 
     use super::*;
     use crate::environment::CircuitField;
@@ -83,7 +84,7 @@ mod tests {
     fn linear_proving_procedure() {
         let circuit_wo_input = LinearEquationRelationWithoutInput::new(A, B, Y);
 
-        let mut rng = ark_std::test_rng();
+        let mut rng = ark_std::rand::rngs::StdRng::from_rng(ark_std::test_rng()).unwrap();
         let (pk, vk) =
             Groth16::<Bls12_381>::circuit_specific_setup(circuit_wo_input, &mut rng).unwrap();
 
@@ -92,8 +93,9 @@ mod tests {
 
         let circuit_with_full_input = LinearEquationRelationWithFullInput::new(A, B, Y, X);
 
-        let proof = Groth16::prove(&pk, circuit_with_full_input, &mut rng).unwrap();
-        let valid_proof = Groth16::verify(&vk, &input, &proof).unwrap();
+        let proof =
+            Groth16::<_, LibsnarkReduction>::prove(&pk, circuit_with_full_input, &mut rng).unwrap();
+        let valid_proof = Groth16::<_, LibsnarkReduction>::verify(&vk, &input, &proof).unwrap();
         assert!(valid_proof);
     }
 }

@@ -132,9 +132,10 @@ mod relation {
 #[cfg(all(test, feature = "circuit"))]
 mod tests {
     use ark_bls12_381::Bls12_381;
-    use ark_groth16::Groth16;
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16};
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem};
     use ark_snark::SNARK;
+    use ark_std::rand::SeedableRng;
 
     use super::*;
     use crate::shielder::{
@@ -197,9 +198,16 @@ mod tests {
         )
     }
 
+    use ark_relations::r1cs::ConstraintLayer;
+    use tracing_subscriber::layer::SubscriberExt;
+
     #[test]
     fn deposit_and_merge_constraints_correctness() {
         let circuit = get_circuit_with_full_input();
+
+        let layer = ConstraintLayer::default();
+        let subscriber = tracing_subscriber::Registry::default().with(layer);
+        let _guard = tracing::subscriber::set_default(subscriber);
 
         let cs = ConstraintSystem::new_ref();
         circuit.generate_constraints(cs.clone()).unwrap();
@@ -216,16 +224,16 @@ mod tests {
     fn deposit_and_merge_proving_procedure() {
         let circuit_withouth_input = DepositAndMergeRelationWithoutInput::new(MAX_PATH_LEN);
 
-        let mut rng = ark_std::test_rng();
+        let mut rng = ark_std::rand::rngs::StdRng::from_rng(ark_std::test_rng()).unwrap();
         let (pk, vk) =
             Groth16::<Bls12_381>::circuit_specific_setup(circuit_withouth_input, &mut rng).unwrap();
 
         let circuit = get_circuit_with_full_input();
-        let proof = Groth16::prove(&pk, circuit, &mut rng).unwrap();
+        let proof = Groth16::<_, LibsnarkReduction>::prove(&pk, circuit, &mut rng).unwrap();
 
         let circuit: DepositAndMergeRelationWithPublicInput = get_circuit_with_full_input().into();
         let input = circuit.serialize_public_input();
-        let valid_proof = Groth16::verify(&vk, &input, &proof).unwrap();
+        let valid_proof = Groth16::<_, LibsnarkReduction>::verify(&vk, &input, &proof).unwrap();
         assert!(valid_proof);
     }
 }

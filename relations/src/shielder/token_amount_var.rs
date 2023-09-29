@@ -12,11 +12,11 @@ use crate::environment::{CircuitField, FpVar};
 
 #[derive(Clone, Debug)]
 pub struct TokenAmountVar {
-    value: FpVar,
+    pub value: FpVar,
 }
 
 impl TokenAmountVar {
-    fn new(value: FpVar) -> Result<Self, SynthesisError> {
+    pub fn new(value: FpVar) -> Result<Self, SynthesisError> {
         // We allow token amounts to use full power of `u128`, but nothing more. Validation mustn't
         // be via `enforce_cmp_unchecked` since we have no guarantees about `value`.
         let limit = FpVar::new_constant(value.cs(), CircuitField::from(u128::MAX))?;

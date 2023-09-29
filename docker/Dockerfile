@@ -1,4 +1,4 @@
-FROM ubuntu:jammy-20220531
+FROM ubuntu:mantic-20230819
 
 RUN apt update && \
         apt install curl -y && \

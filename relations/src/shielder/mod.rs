@@ -12,9 +12,11 @@ pub mod path_shape_var;
 #[cfg(feature = "circuit")]
 pub mod token_amount_var;
 pub mod types;
+mod vote;
 mod withdraw;
 
 use ark_ff::{BigInteger256, PrimeField};
+use ark_serialize::CanonicalDeserialize;
 use ark_std::vec::Vec;
 pub use deposit::{
     DepositRelationWithFullInput, DepositRelationWithPublicInput, DepositRelationWithoutInput,
@@ -30,8 +32,9 @@ pub use note::{bytes_from_note, compute_note, compute_parent_hash, note_from_byt
 pub use types::{
     FrontendMerklePath as MerklePath, FrontendMerkleRoot as MerkleRoot, FrontendNote as Note,
     FrontendNullifier as Nullifier, FrontendTokenAmount as TokenAmount, FrontendTokenId as TokenId,
-    FrontendTrapdoor as Trapdoor,
+    FrontendTrapdoor as Trapdoor, FrontendVote as Vote,
 };
+pub use vote::{VoteRelationWithFullInput, VoteRelationWithPublicInput, VoteRelationWithoutInput};
 pub use withdraw::{
     WithdrawRelationWithFullInput, WithdrawRelationWithPublicInput, WithdrawRelationWithoutInput,
 };
@@ -52,6 +55,14 @@ use crate::environment::CircuitField;
 
 pub fn convert_hash(front: [u64; 4]) -> CircuitField {
     CircuitField::new(BigInteger256::new(front))
+}
+
+pub fn convert_affine(front: [u8; 48]) -> ark_bls12_381::G1Affine {
+    ark_bls12_381::G1Affine::deserialize_compressed(&front[..]).unwrap()
+}
+
+fn convert_bases(front: Vec<[u8; 48]>) -> Vec<ark_bls12_381::G1Affine> {
+    front.into_iter().map(convert_affine).collect()
 }
 
 fn convert_vec(front: Vec<[u64; 4]>) -> Vec<CircuitField> {
